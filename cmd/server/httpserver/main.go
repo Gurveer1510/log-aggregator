@@ -14,32 +14,35 @@ import (
 
 type Server struct {
 	ringBuffer *buffer.RingBuffer
+	port       string
 	h          *hub.Hub
 }
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func (r *http.Request) bool {
+	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
 
-func NewServer(ringBuffer *buffer.RingBuffer, hub *hub.Hub) *Server {
+func NewServer(ringBuffer *buffer.RingBuffer, port string, hub *hub.Hub) *Server {
 	return &Server{
 		ringBuffer: ringBuffer,
 		h:          hub,
+		port:       port,
 	}
 }
 
 func (s *Server) Start() {
 	router := mux.NewRouter()
 	router.HandleFunc("/log", s.logHandler).Methods("GET")
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./frontend"))).Methods("GET")
 	router.HandleFunc("/ws", s.handleWs)
 
-	log.Println("Server started on http://localhost:8000")
+	log.Println("Server started on http://localhost:" + s.port)
 
-	if err := http.ListenAndServe(":8000", router); err != nil {
+	if err := http.ListenAndServe(":"+s.port, router); err != nil {
 		panic(err)
 	}
 }
@@ -48,22 +51,18 @@ func (s *Server) handleWs(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
-		return	
-	}
-	defer conn.Close()
-	if err != nil {
 		return
 	}
+	defer conn.Close()
 	ch := make(chan model.LogEntry, 10)
 	s.h.Subscribe(ch)
 	defer s.h.Unsubscribe(ch)
-	
-	for v := range ch { 
+
+	for v := range ch {
 		if err := conn.WriteJSON(v); err != nil {
 			break
 		}
 	}
-
 }
 
 func (s *Server) logHandler(w http.ResponseWriter, r *http.Request) {

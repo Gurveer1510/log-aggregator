@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
+	"log"
 	"net"
 
 	"github.com/Gurveer1510/logaggregator/internal/buffer"
@@ -15,29 +15,31 @@ import (
 
 type Server struct {
 	ringBuffer *buffer.RingBuffer
+	port string
 	h          *hub.Hub
 }
 
-func NewServer(ringBuffer *buffer.RingBuffer, hub *hub.Hub) *Server {
+func NewServer(ringBuffer *buffer.RingBuffer, port string, hub *hub.Hub) *Server {
 	return &Server{
 		ringBuffer: ringBuffer,
 		h:          hub,
+		port:       port,
 	}
 }
 
 func (s *Server) Start() {
-	listener, err := net.Listen("tcp", ":8080")
+	listener, err := net.Listen("tcp", ":"+s.port)
 	if err != nil {
-		fmt.Printf("Error while starting the server: %v", err)
+		log.Printf("Error while starting the server: %v", err)
 		return
 	}
 	defer listener.Close()
-	fmt.Println("Server is listening on port 8080...")
+	log.Println("Server is listening on port " + s.port + "...")
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Failed to accept connections: %v", err)
+			log.Printf("Failed to accept connections: %v", err)
 			continue
 		}
 
@@ -53,16 +55,16 @@ func (s *Server) handleClient(conn net.Conn) {
 		inputLog := model.LogEntry{}
 		if err := scanner.Err(); err != nil {
 			if errors.Is(err, io.EOF) {
-				fmt.Println("Connection closed")
+				log.Println("Connection closed")
 				return
 			}
-			fmt.Printf("Error while scanning lines: %s\n", err)
+			log.Printf("Error while scanning lines: %s\n", err)
 			return
 		}
 
 		err := json.Unmarshal(scanner.Bytes(), &inputLog)
 		if err != nil {
-			fmt.Printf("ERROR while unmarshaling: %s\n", err)
+			log.Printf("ERROR while unmarshaling: %s\n", err)
 			continue
 		}
 		s.ringBuffer.Insert(inputLog)

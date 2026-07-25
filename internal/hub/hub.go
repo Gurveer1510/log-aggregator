@@ -26,14 +26,22 @@ func (h *Hub) Unsubscribe(ch chan model.LogEntry) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	indexToRemove := 0
+	found := false
 	for index, v := range h.subscribers {
 		if v == ch {
 			indexToRemove = index
+			found = true
 			break
 		}
 	}
+
+	if !found {
+		return // Channel not found, nothing to remove
+	}
+
 	h.subscribers[indexToRemove] = h.subscribers[len(h.subscribers)-1]
 	h.subscribers = h.subscribers[:len(h.subscribers)-1]
+	close(ch) // Close the channel to signal the subscriber
 }
 
 func (h *Hub) Broadcast(logentry model.LogEntry) {

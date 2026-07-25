@@ -36,6 +36,9 @@ func (r *RingBuffer) Insert(input model.LogEntry) {
 func (r *RingBuffer) Query() []*model.LogEntry {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+	if r.lastInsert == -1 {
+		return []*model.LogEntry{}
+	}
 	output := []*model.LogEntry{}
 	index := r.nextRead
 	for {
