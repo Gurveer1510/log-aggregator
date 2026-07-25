@@ -41,7 +41,6 @@ func (h *Hub) Unsubscribe(ch chan model.LogEntry) {
 
 	h.subscribers[indexToRemove] = h.subscribers[len(h.subscribers)-1]
 	h.subscribers = h.subscribers[:len(h.subscribers)-1]
-	close(ch) // Close the channel to signal the subscriber
 }
 
 func (h *Hub) Broadcast(logentry model.LogEntry) {
@@ -51,7 +50,7 @@ func (h *Hub) Broadcast(logentry model.LogEntry) {
 		select {
 		case v <- logentry:
 		default:
-			
+
 		}
 	}
 }

@@ -15,7 +15,7 @@ import (
 
 type Server struct {
 	ringBuffer *buffer.RingBuffer
-	port string
+	port       string
 	h          *hub.Hub
 }
 
@@ -53,14 +53,6 @@ func (s *Server) handleClient(conn net.Conn) {
 
 	for scanner.Scan() {
 		inputLog := model.LogEntry{}
-		if err := scanner.Err(); err != nil {
-			if errors.Is(err, io.EOF) {
-				log.Println("Connection closed")
-				return
-			}
-			log.Printf("Error while scanning lines: %s\n", err)
-			return
-		}
 
 		err := json.Unmarshal(scanner.Bytes(), &inputLog)
 		if err != nil {
@@ -69,5 +61,13 @@ func (s *Server) handleClient(conn net.Conn) {
 		}
 		s.ringBuffer.Insert(inputLog)
 		s.h.Broadcast(inputLog)
+	}
+	if err := scanner.Err(); err != nil {
+		if errors.Is(err, io.EOF) {
+			log.Println("Connection closed")
+			return
+		}
+		log.Printf("Error while scanning lines: %s\n", err)
+		return
 	}
 }

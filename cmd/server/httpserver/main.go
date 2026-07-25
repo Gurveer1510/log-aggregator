@@ -37,8 +37,8 @@ func NewServer(ringBuffer *buffer.RingBuffer, port string, hub *hub.Hub) *Server
 func (s *Server) Start() {
 	router := mux.NewRouter()
 	router.HandleFunc("/log", s.logHandler).Methods("GET")
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./frontend"))).Methods("GET")
 	router.HandleFunc("/ws", s.handleWs)
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./frontend"))).Methods("GET")
 
 	log.Println("Server started on http://localhost:" + s.port)
 
@@ -56,7 +56,10 @@ func (s *Server) handleWs(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 	ch := make(chan model.LogEntry, 10)
 	s.h.Subscribe(ch)
-	defer s.h.Unsubscribe(ch)
+	defer func(){
+		s.h.Unsubscribe(ch)
+		close(ch)
+	}()
 
 	for v := range ch {
 		if err := conn.WriteJSON(v); err != nil {

@@ -1,18 +1,18 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	HttpPort string `env:"HTTP_PORT" envDefault:"8000"`
-	TcpPort  string `env:"TCP_PORT" envDefault:"8001"`
+	HttpPort string `env:"HTTP_PORT"`
+	TcpPort  string `env:"TCP_PORT"`
 
-	BufferSize int `env:"BUFFER_SIZE" envDefault:"100"`
+	BufferSize int `env:"BUFFER_SIZE"`
 }
 
 func New() *Config {
@@ -22,7 +22,7 @@ func New() *Config {
 func (c *Config) LoadConfig() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file")
 	}
 
 	// Read variables using the standard os package
@@ -42,8 +42,9 @@ func (c *Config) LoadConfig() {
 		c.TcpPort = "8001" // Default value
 	}
 
-	if bufferSize != "" {
-		fmt.Sscanf(bufferSize, "%d", &c.BufferSize)
+	bufferSizeInt, err := strconv.Atoi(bufferSize)
+	if err == nil && bufferSize != "" {
+		c.BufferSize = bufferSizeInt
 	} else {
 		c.BufferSize = 100 // Default value
 	}
