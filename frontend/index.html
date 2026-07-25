@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log Aggregator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      background: #0c0e14;
+      color: #c5c9d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #1e2130;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #e2e5ed;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #6b7084;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      transition: background 0.3s;
+    }
+
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e88;
+    }
+
+    select {
+      background: #161826;
+      border: 1px solid #2a2d42;
+      color: #c5c9d4;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:hover { border-color: #3a3e58; }
+
+    .count {
+      font-size: 11px;
+      color: #6b7084;
+    }
+
+    .log-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    .log-container::-webkit-scrollbar { width: 6px; }
+    .log-container::-webkit-scrollbar-track { background: transparent; }
+    .log-container::-webkit-scrollbar-thumb { background: #2a2d42; border-radius: 3px; }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 80px 72px 120px 1fr;
+      gap: 16px;
+      padding: 6px 24px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      border-bottom: 1px solid #12141e;
+      transition: background 0.15s;
+    }
+
+    .log-entry:hover { background: #141624; }
+
+    .log-entry.entering {
+      animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-time { color: #555872; }
+
+    .log-level {
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      padding-top: 2px;
+    }
+
+    .log-level.INFO  { color: #3b82f6; }
+    .log-level.ERROR { color: #ef4444; }
+    .log-level.DEBUG { color: #a78bfa; }
+    .log-level.WARN  { color: #f59e0b; }
+
+    .log-service {
+      color: #22c55e;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .log-message { color: #c5c9d4; }
+
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 8px;
+      color: #3a3e58;
+      font-size: 13px;
+    }
+
+    .empty-icon { font-size: 28px; opacity: 0.4; }
+
+    .clear-btn {
+      background: none;
+      border: 1px solid #2a2d42;
+      color: #6b7084;
+      font-family: inherit;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .clear-btn:hover { border-color: #3a3e58; color: #c5c9d4; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LOG AGGREGATOR</h1>
+    <div class="controls">
+      <div class="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">disconnected</span>
+      </div>
+      <select id="levelFilter">
+        <option value="">all levels</option>
+        <option value="INFO">INFO</option>
+        <option value="ERROR">ERROR</option>
+        <option value="DEBUG">DEBUG</option>
+        <option value="WARN">WARN</option>
+      </select>
+      <span class="count" id="logCount">0 entries</span>
+      <button class="clear-btn" id="clearBtn">clear</button>
+    </div>
+  </header>
+
+  <div class="log-container" id="logContainer">
+    <div class="empty" id="emptyState">
+      <span class="empty-icon">◇</span>
+      <span>waiting for logs…</span>
+    </div>
+  </div>
+
+  <script>
+    const logContainer = document.getElementById("logContainer");
+    const levelFilter = document.getElementById("levelFilter");
+    const logCount = document.getElementById("logCount");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const emptyState = document.getElementById("emptyState");
+    const clearBtn = document.getElementById("clearBtn");
+
+    let allLogs = [];
+    let ws;
+
+    function connect() {
+      const host = window.location.host;
+      console.log(host)
+      ws = new WebSocket(`ws://localhost:8000/ws`);
+
+      ws.onopen = () => {
+        statusDot.classList.add("connected");
+        statusText.textContent = "connected";
+      };
+
+      ws.onclose = () => {
+        statusDot.classList.remove("connected");
+        statusText.textContent = "disconnected";
+        setTimeout(connect, 2000);
+      };
+
+      ws.onerror = () => ws.close();
+
+      ws.onmessage = (event) => {
+        const entry = JSON.parse(event.data);
+        allLogs.unshift(entry);
+        render();
+      };
+    }
+
+    function render() {
+      const filter = levelFilter.value;
+      const filtered = filter
+        ? allLogs.filter((e) => e.level === filter)
+        : allLogs;
+
+      if (filtered.length === 0) {
+        logContainer.innerHTML = "";
+        logContainer.appendChild(emptyState);
+        emptyState.querySelector("span:last-child").textContent =
+          filter ? `no ${filter} logs` : "waiting for logs…";
+      } else {
+        logContainer.innerHTML = filtered.map((e, i) => logRow(e, i === 0)).join("");
+      }
+
+      logCount.textContent = `${allLogs.length} entr${allLogs.length === 1 ? "y" : "ies"}`;
+    }
+
+    function logRow(entry, isNew) {
+      const time = entry.timestamp || "—";
+      const level = entry.level || "—";
+      const service = entry.service_name || "—";
+      const message = entry.message || "";
+
+      return `
+        <div class="log-entry${isNew ? " entering" : ""}">
+          <span class="log-time">${esc(time)}</span>
+          <span class="log-level ${esc(level)}">${esc(level)}</span>
+          <span class="log-service">${esc(service)}</span>
+          <span class="log-message">${esc(message)}</span>
+        </div>
+      `;
+    }
+
+    function esc(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    levelFilter.addEventListener("change", render);
+
+    clearBtn.addEventListener("click", () => {
+      allLogs = [];
+      render();
+    });
+
+    connect();
+  </script>
+</body>
+</html>
