@@ -1,4 +1,4 @@
-module github.com/Gurveer1510/logaggregator
+module github.com/Gurveer1510/log-aggregator
 
 go 1.26.4
 
