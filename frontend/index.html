@@ -246,7 +246,7 @@
       const time = entry.timestamp || "—";
       const level = entry.level || "—";
       const service = entry.service_name || "—";
-      const message = entry.message || "";
+      const message = typeof entry.message === "object" ? JSON.stringify(entry.message) : entry.message || "";
 
       return `
         <div class="log-entry${isNew ? " entering" : ""}">
