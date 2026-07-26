@@ -40,7 +40,7 @@ go run cmd/main.go
 Other Go projects can send logs using the built-in client package:
 
 ```bash
-go get github.com/Gurveer1510/logaggregator
+go get github.com/Gurveer1510/log-aggregator
 ```
 
 ```go
@@ -48,7 +48,7 @@ package main
 
 import (
     "log"
-    "github.com/Gurveer1510/logaggregator/pkg/client"
+    "github.com/Gurveer1510/log-aggregator/pkg/client"
 )
 
 func main() {

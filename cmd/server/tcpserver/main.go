@@ -8,9 +8,9 @@ import (
 	"log"
 	"net"
 
-	"github.com/Gurveer1510/logaggregator/internal/buffer"
-	"github.com/Gurveer1510/logaggregator/internal/hub"
-	"github.com/Gurveer1510/logaggregator/internal/model"
+	"github.com/Gurveer1510/log-aggregator/internal/buffer"
+	"github.com/Gurveer1510/log-aggregator/internal/hub"
+	"github.com/Gurveer1510/log-aggregator/internal/model"
 )
 
 type Server struct {

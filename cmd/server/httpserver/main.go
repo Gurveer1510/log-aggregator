@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Gurveer1510/logaggregator/internal/buffer"
-	"github.com/Gurveer1510/logaggregator/internal/hub"
-	"github.com/Gurveer1510/logaggregator/internal/model"
+	"github.com/Gurveer1510/log-aggregator/internal/buffer"
+	"github.com/Gurveer1510/log-aggregator/internal/hub"
+	"github.com/Gurveer1510/log-aggregator/internal/model"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
@@ -56,7 +56,7 @@ func (s *Server) handleWs(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 	ch := make(chan model.LogEntry, 10)
 	s.h.Subscribe(ch)
-	defer func(){
+	defer func() {
 		s.h.Unsubscribe(ch)
 		close(ch)
 	}()

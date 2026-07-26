@@ -1,11 +1,11 @@
 package main
 
 import (
-	httpserver "github.com/Gurveer1510/logaggregator/cmd/server/httpserver"
-	"github.com/Gurveer1510/logaggregator/cmd/server/tcpserver"
-	"github.com/Gurveer1510/logaggregator/internal/buffer"
-	"github.com/Gurveer1510/logaggregator/internal/config"
-	"github.com/Gurveer1510/logaggregator/internal/hub"
+	httpserver "github.com/Gurveer1510/log-aggregator/cmd/server/httpserver"
+	"github.com/Gurveer1510/log-aggregator/cmd/server/tcpserver"
+	"github.com/Gurveer1510/log-aggregator/internal/buffer"
+	"github.com/Gurveer1510/log-aggregator/internal/config"
+	"github.com/Gurveer1510/log-aggregator/internal/hub"
 )
 
 func main() {

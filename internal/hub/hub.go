@@ -3,7 +3,7 @@ package hub
 import (
 	"sync"
 
-	"github.com/Gurveer1510/logaggregator/internal/model"
+	"github.com/Gurveer1510/log-aggregator/internal/model"
 )
 
 type Hub struct {
