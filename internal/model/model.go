@@ -1,5 +1,7 @@
 package model
 
+import "encoding/json"
+
 type LogLevel string
 
 const (
@@ -9,8 +11,8 @@ const (
 )
 
 type LogEntry struct {
-	Level       LogLevel `json:"level"`
-	Timestamp   string   `json:"timestamp"`
-	ServiceName string   `json:"service_name"`
-	Message     string   `json:"message"`
+	Level       LogLevel        `json:"level"`
+	Timestamp   string          `json:"timestamp"`
+	ServiceName string          `json:"service_name"`
+	Message     json.RawMessage `json:"message"`
 }
